@@ -5,14 +5,16 @@
 
 /* A MAX Heap assignment that can take user input or from a file, then add value to MAX Heap array, print, and delete.  
  * Author: Ryan Le
- * Date: 12/7/2020
+ * Date: 12/7/2020  
+ * Modified: 12/26/2020 fixed and add MAX Heap sort 
  */
 
 using namespace std;
 
-void insert_heap(int* heap, int i, int numInput);
+void insert_heap(int* heap, int current_index, int numInput);
 void print_heap(int heap[], int arrSize);
-void delete_heap(int* heap, int arrSize, int numDelete);
+bool delete_heap(int* heap, int arrSize, int numDelete);
+void maxHeapSort(int* heap, int arrSize);
 
 int main() {
   char* action = new char[20];
@@ -36,19 +38,26 @@ int main() {
     //Opening file help from https://www.bgsu.edu/arts-and-sciences/computer-science/cs-documentation/reading-data-from-files-using-c-plus-plus.html
     if(action[0] == 'A' && action[1] == 'D' && action[2] == 'D'
        && action[3] == 'F' && action[4] == 'I' && action[5] == 'L' && action[6] == 'E' && action[7] == '\0') {
-
       ifstream indata;
       int num;
       indata.open("file.txt");
       indata >> num;
-      int i = 1;
+     
       while ( !indata.eof()) {
-	insert_heap(heap, i, num);
-	i++;
-	indata >> num;
+	if (current_index < arrSize-1) {
+	  insert_heap(heap, current_index, num);
+	  current_index++;
+	  indata >> num;
+	}
+	else {
+	  cout << "Can only hold 100 numbers" << endl;
+	  break;
+	}
       }
       indata.close();
+      maxHeapSort(heap, current_index);
       cout << "Read file" << endl;
+      
     }
     
     //ADD from user input
@@ -56,16 +65,22 @@ int main() {
       cout << "Can store up to 100 numbers." << endl;    //tells user how many total numbers they can store
       cout << "How many numbers do you want to enter? "; //asks how many numbers user wants to input
       cin >> input;
-      cout << "Given: " << input << endl;
-      cout << "Enter a number between 1-1000." << endl;  //tells user to only enter number between 1-1000
-   
-      for(int i = 1; i < input+1; i++) {
-	cout << "[" << i << "] Enter number: ";  //[i] shows the number order that the user enter
-	cin >> numInput;
-
-	insert_heap(heap, current_index, numInput);
-	current_index++;
+      if (current_index+input < arrSize) {
+	cout << "Given: " << input << endl;
+	cout << "Enter a number between 1-1000." << endl;  //tells user to only enter number between 1-1000
+	
+	for(int i = 1; i < input+1; i++) {
+	  cout << "[" << i << "] Enter number: ";  //[i] shows the number order that the user enter
+	  cin >> numInput;
+	  
+	  insert_heap(heap, current_index, numInput);
+	  maxHeapSort(heap, current_index);
+	  current_index++;
+	}
       }
+      else {
+	cout << "Can only store up to 100 numbers." << endl;
+       }
     }
 
     //PRINT
@@ -78,7 +93,11 @@ int main() {
       cout << endl;
       cout << "What number do you want to delete? ";
       cin >> numDelete;
-      delete_heap(heap, arrSize, numDelete);
+      if(delete_heap(heap, arrSize, numDelete) == 1) {
+	current_index--; //adjusts the current_index after removing number
+      }
+      maxHeapSort(heap, current_index);
+      
     }
 
     //QUIT
@@ -188,10 +207,12 @@ void print_heap(int heap[], int arrSize) {
 }
 
 
-void insert_heap(int* heap, int i, int numInput) {
-  heap[i] = numInput;
+void insert_heap(int* heap, int current_index, int numInput) {
+  heap[current_index] = numInput;
+
   // check Max heap;
-  int child = i;
+
+  int child = current_index;
   int parent = child/2;
   while (heap[parent] < heap[child] && parent > 0) {  //checking and swaping
     int tempNum = heap[parent];  
@@ -199,13 +220,14 @@ void insert_heap(int* heap, int i, int numInput) {
     heap[child] = tempNum;
     child = parent;
     parent = child/2;
-    
+   
   }
 }
 
-void delete_heap(int* heap, int arrSize, int numDelete) {
+bool delete_heap(int* heap, int arrSize, int numDelete) {
   int lastNumber;  //last number in the heap
   int lastNumberIndex;
+  bool delete_found = 0;
   //finds last number in heap
   for (int i= 1; i < arrSize; i++) {
     if (heap[1] == 0) {
@@ -215,51 +237,83 @@ void delete_heap(int* heap, int arrSize, int numDelete) {
       lastNumber = heap[i];
       lastNumberIndex = i;
       i = arrSize;
-      //cout << "last Number Index: " << lastNumberIndex << endl;
-      //cout << "lastNumber: " << lastNumber << endl;
     }
   }
   for (int i = 1; i < arrSize; i++) {
-    //cout << "heaps: " << heap[i] << endl;
-    if (heap[i] == numDelete) {
+    if (heap[i] == numDelete) {  // swap last element to deleted element
       heap[i] = lastNumber;
       heap[lastNumberIndex] = 0;
-      //cout << "heap[" << i << "]: " << heap[i] << endl; 
-      //cout << "heap[lastNumberIndex]: " << heap[lastNumberIndex] << endl; 
-
-      //re-checks MAX heap properties & swapping child to parent if parent < child
-      int parent = i; cout << "parent: " << parent << endl;
-      int child1 = parent*2; cout << "child1: " << child1 << endl;
-      int child2 = parent*2+1; cout << "child2: " << child2 << endl;
-      if (heap[child1] > heap[child2]) {
-	  while (heap[child1] > heap[parent]) {
-	    int tempNum = heap[parent];
-	    heap[parent] = heap[child1];
-	    heap[child1] = tempNum;
-	    parent = child1;
-	    child1 = parent*2;
-	    child2 = parent*2+1;
-	  }
-      } else if (heap[child2] > heap[child1]) {
-	while (heap[child2] > heap[parent]) {
-	  int tempNum = heap[parent];
-	  heap[parent] = heap[child2];
-	  heap[child2] = tempNum;
-	  parent = child2;
-	  child1 = parent*2;
-	  child2 = parent*2+1;
-	}
-
-      }
-      i = arrSize; 
+      delete_found = 1;
+      i = arrSize;
     }
-    else if (heap[i] == 0) {
-      cout << numDelete << " not found in heap." << endl; 
-    }
-    //exit loop
-    if (heap[i] ==0) {
-      i = arrSize; 
-    }
+  }
+  // let user know if delete element found
+  if (delete_found) {
+      cout << "Deleted value: " << numDelete << endl;
+      return 1;
+  }
+  else {
+    cout << "Nunmber you want to delete is not found: " << numDelete << endl;
+    return 0;
   }
 }
 
+
+void maxHeapSort (int* heap, int curr_index) {
+  //re-checks MAX heap properties & swapping child to parent if parent < child
+  //check top down heap array
+  for (int i = 1; i < curr_index/2; i++) {
+    int parent = i;
+    int child1 = parent*2;
+    int child2 = parent*2+1;
+    
+    if (heap[child1] > heap[child2]) {
+      while (heap[child1] > heap[parent]) {
+        int tempNum = heap[parent];
+        heap[parent] = heap[child1];
+        heap[child1] = tempNum;
+        parent = child1;
+        child1 = parent*2;
+        child2 = parent*2+1;
+      }
+    }
+    else if (heap[child2] > heap[child1]) {
+      while (heap[child2] > heap[parent]) {
+        int tempNum = heap[parent];
+        heap[parent] = heap[child2];
+        heap[child2] = tempNum;
+        parent = child2;
+        child1 = parent*2;
+        child2 = parent*2+1;
+      }
+    }
+  }
+
+  // check bottom up 
+  for (int i = curr_index/2; i > 0; i--) {
+    int parent = i;
+    int child1 = parent*2;
+    int child2 = parent*2+1;
+    
+    if (heap[child1] > heap[child2]) {
+      while (heap[child1] > heap[parent]) { //promote the left child to the parent
+	int tempNum = heap[parent];
+	heap[parent] = heap[child1];
+	heap[child1] = tempNum;
+	parent = child1;
+	child1 = parent*2;
+	child2 = parent*2+1;
+      }
+    }
+    else if (heap[child2] > heap[child1]) { //promote the right child to the parent
+      while (heap[child2] > heap[parent]) {
+	int tempNum = heap[parent];
+	heap[parent] = heap[child2];
+	heap[child2] = tempNum;
+	parent = child2;
+	child1 = parent*2;
+	child2 = parent*2+1;
+      }
+    }
+  }
+}
